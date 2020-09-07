@@ -1,0 +1,142 @@
+/*
+  Traffic Light
+  
+  This program is used to control a series of LEDs in a traffic light system.
+  Additionally. it reads user input from the pedestrian button and uses its
+  value to alter the duration of the lights. 
+
+   The circuit:
+ * LEDs from pins 2 through 7 run to ground via 150ohm resistor
+ * Two button (pedestrian buttons) inputs at pin 11 and 12 run to ground
+
+  created Dec 2016
+  By: Albert W. and Sukhveer S.
+
+*/
+
+// Variables storing the port numbers for each of the LEDs and the two buttons
+const int red1 = 4;
+const int yellow1 = 5;
+const int green1 = 6;
+
+const int red2 = 7;
+const int yellow2 = 8;
+const int green2 = 9;
+
+const int pedestrianSignalPort1 = 2;
+const int pedestrianSignalPort2 = 3;
+
+// Time (in milliseconds) to hold the current state of the traffic light
+int delayTime;  
+
+// Variables tracking whether or not the pedestrian buttons are activated
+volatile boolean pedestrianSignal1 = LOW;
+volatile boolean pedestrianSignal2 = LOW;
+
+// Sets pins to output or input
+void setup() {
+  pinMode(red1, OUTPUT); // red1 light
+  pinMode(yellow1, OUTPUT); // yellow1 light
+  pinMode(green1, OUTPUT); // green1 light
+  pinMode(pedestrianSignalPort1, INPUT_PULLUP); // pedestrian1 signal
+  attachInterrupt(digitalPinToInterrupt(pedestrianSignalPort1), button1Pressed, FALLING); // attach interrupt to button1
+  
+  pinMode(red2, OUTPUT); // red2 light
+  pinMode(yellow2, OUTPUT); // yellow2 light
+  pinMode(green2, OUTPUT); // green2 light                                               
+  pinMode(pedestrianSignalPort2, INPUT_PULLUP); // pedestrian2 signal
+  attachInterrupt(digitalPinToInterrupt(pedestrianSignalPort2), button2Pressed, FALLING);  // attach interrupt to button2
+}
+
+void loop() {
+  delayTime = 6000;
+  digitalWrite(red1, HIGH);   // red1 on
+  digitalWrite(red2, LOW);    // red2 off  
+  digitalWrite(green2, HIGH); // green2 on
+  
+  // halves the delay time, then checks if the button is pressed. if it is pressed,
+  // delaying will be reduced significantly  
+  delay(delayTime / 2); 
+  delayTime = delayTime / 2;
+    
+  // if pedestrian facing red1 light presses the button, decrease red1 light delay time
+  // in order to make the green come faster for the pedestrian 
+  if (pedestrianSignal1 == HIGH) {
+     delayTime = delayTime - 2000; // decrease delayTime
+     pedestrianSignal1 = LOW;      // set the signal LOW for the next button press
+  }
+  
+  delay(delayTime);
+    
+  delayTime = 2000;
+                               // red 1 still on
+  digitalWrite(green2, LOW);   // green2 off
+  digitalWrite(yellow2, HIGH); // yellow2 on
+  delay(delayTime);
+  
+  delayTime = 1000; 
+                               // red 1 still on
+  digitalWrite(yellow2, LOW);  // yellow2 off
+  digitalWrite(red2, HIGH);    // red2 on
+  delay(delayTime);
+  
+  delayTime = 6000;  
+                              // red2 still on
+  digitalWrite(red1, LOW);    // red1 off
+  digitalWrite(green1, HIGH); // green1 on
+  
+  // half the delay time, then check if the button is pressed. if the button is pressed, no further
+  // delaying will be done
+  delay(delayTime / 2);    
+  delayTime = delayTime / 2;
+  
+  // if pedestrian facing the other red light presses the button, decrease delay time
+  // in order to make the green come faster for the pedestrian 
+  if (pedestrianSignal2 == HIGH) {
+     delayTime = delayTime - 2000; // decrease delayTime
+     pedestrianSignal2 = LOW;      // set the signal LOW for the next button press
+  }
+  
+  delay(delayTime);
+  
+  delayTime = 2000;
+                               // red2 still on
+  digitalWrite(green1, LOW);   // green1 off
+  digitalWrite(yellow1, HIGH); // yellow1 on
+  delay(delayTime);
+  
+  delayTime = 1000;    
+                               // red2 still on
+  digitalWrite(yellow1, LOW);  // yellow1 off
+  digitalWrite(red1, HIGH);    // red1 on
+  delay(delayTime);
+
+  // the red2 will be turned off at the beginning of the next iteration of the loop
+  digitalWrite(13, HIGH);
+  delay(100);
+  digitalWrite(13, LOW);
+  delay(100);
+  digitalWrite(13, HIGH);
+  delay(100);
+}
+
+volatile int timePrevious1 = 0; // used for the debounce, stores the last time a buttonPress was detected
+
+// function that is invoked by the interrupt as soon as pedestrian button 1 is pressed
+void button1Pressed() {
+  if (millis() - timePrevious1 > 100) { // if the current button press occured after 100ms, then it's a valid press
+    pedestrianSignal1 = HIGH; // button has been pressed, so set pedestrianSignal1 to HIGH
+    timePrevious1 = millis();
+  }
+}
+
+volatile int timePrevious2 = 0; // used for the debounce, stores the last time a buttonPress was detected
+
+// function that is invoked by the interrupt as soon as pedestrian button 2 is pressed
+void button2Pressed() {
+  if (millis() - timePrevious2 > 100) { // if the current button press occured after 100ms, then it's a valid press
+    pedestrianSignal2 = HIGH; // button has been pressed, so set pedestrianSignal2 to HIGH
+    timePrevious2 = millis();
+  }
+}
+
